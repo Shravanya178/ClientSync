@@ -9,6 +9,7 @@ import {
   updateDoc,
   doc,
   serverTimestamp,
+  where,
 } from "firebase/firestore";
 import { db } from "../services/firebase";
 import {
@@ -18,23 +19,43 @@ import {
   Plus,
   Calendar,
   Send,
+  HelpCircle,
+  Download,
+  Upload,
+  File,
 } from "lucide-react";
+import HelpRequestModal from "./HelpRequestModal";
 
 const Deliverables = ({ user, isAdminView }) => {
   const [deliverables, setDeliverables] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("all");
   const [showAddForm, setShowAddForm] = useState(false);
+  const [selectedDeliverable, setSelectedDeliverable] = useState(null);
+  const [showHelpModal, setShowHelpModal] = useState(false);
   const [newDeliverable, setNewDeliverable] = useState({
     title: "",
     description: "",
     deadline: "",
     priority: "medium",
+    clientId: "",
   });
 
   useEffect(() => {
     const deliverablesRef = collection(db, "deliverables");
-    const q = query(deliverablesRef, orderBy("deadline", "asc"));
+    let q;
+    
+    if (isAdminView) {
+      // Admin sees all deliverables
+      q = query(deliverablesRef, orderBy("deadline", "asc"));
+    } else {
+      // Client sees only their deliverables
+      q = query(
+        deliverablesRef, 
+        where("clientId", "==", user.uid),
+        orderBy("deadline", "asc")
+      );
+    }
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const deliverablesData = snapshot.docs.map((doc) => ({
@@ -48,7 +69,7 @@ const Deliverables = ({ user, isAdminView }) => {
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [user.uid, isAdminView]);
 
   const handleAddDeliverable = async (e) => {
     e.preventDefault();
@@ -61,14 +82,17 @@ const Deliverables = ({ user, isAdminView }) => {
         deadline: new Date(newDeliverable.deadline),
         priority: newDeliverable.priority,
         status: "pending",
+        clientId: newDeliverable.clientId || user.uid,
         createdAt: serverTimestamp(),
         createdBy: user.uid,
+        hasActiveHelpRequest: false,
       });
       setNewDeliverable({
         title: "",
         description: "",
         deadline: "",
         priority: "medium",
+        clientId: "",
       });
       setShowAddForm(false);
     } catch (error) {
@@ -85,6 +109,11 @@ const Deliverables = ({ user, isAdminView }) => {
     } catch (error) {
       console.error("Error updating status:", error);
     }
+  };
+
+  const handleGetHelp = (deliverable) => {
+    setSelectedDeliverable(deliverable);
+    setShowHelpModal(true);
   };
 
   const getStatusColor = (status) => {
@@ -149,7 +178,9 @@ const Deliverables = ({ user, isAdminView }) => {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h3 className="text-2xl font-bold text-gray-900">Deliverables</h3>
+        <h3 className="text-2xl font-bold text-gray-900">
+          {isAdminView ? "All Deliverables" : "My Deliverables"}
+        </h3>
         {isAdminView && (
           <button
             onClick={() => setShowAddForm(!showAddForm)}
@@ -216,6 +247,23 @@ const Deliverables = ({ user, isAdminView }) => {
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                 />
               </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Client ID (Optional - leave empty for yourself)
+              </label>
+              <input
+                type="text"
+                value={newDeliverable.clientId}
+                onChange={(e) =>
+                  setNewDeliverable({
+                    ...newDeliverable,
+                    clientId: e.target.value,
+                  })
+                }
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                placeholder="Client User ID..."
+              />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -307,6 +355,11 @@ const Deliverables = ({ user, isAdminView }) => {
                     <div className="flex items-center justify-between mb-2">
                       <h4 className="text-lg font-semibold text-gray-900">
                         {deliverable.title}
+                        {deliverable.hasActiveHelpRequest && (
+                          <span className="ml-2 inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                            Help Requested
+                          </span>
+                        )}
                       </h4>
                       <div className="flex items-center space-x-2">
                         <span
@@ -349,32 +402,69 @@ const Deliverables = ({ user, isAdminView }) => {
                   </div>
                 </div>
 
-                {/* Status Update Buttons (Admin Only) */}
-                {isAdminView && (
-                  <div className="ml-4 flex space-x-2">
+                {/* Action Buttons */}
+                <div className="ml-4 flex flex-col space-y-2">
+                  {/* Admin Status Update Buttons */}
+                  {isAdminView && (
+                    <div className="flex space-x-2">
+                      <button
+                        onClick={() =>
+                          updateStatus(deliverable.id, "in-progress")
+                        }
+                        disabled={deliverable.status === "in-progress"}
+                        className="px-3 py-1 text-xs bg-blue-100 text-blue-800 rounded-full hover:bg-blue-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        In Progress
+                      </button>
+                      <button
+                        onClick={() => updateStatus(deliverable.id, "completed")}
+                        disabled={deliverable.status === "completed"}
+                        className="px-3 py-1 text-xs bg-green-100 text-green-800 rounded-full hover:bg-green-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Complete
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Client Help Request Button */}
+                  {!isAdminView && deliverable.status !== "completed" && (
                     <button
-                      onClick={() =>
-                        updateStatus(deliverable.id, "in-progress")
-                      }
-                      disabled={deliverable.status === "in-progress"}
-                      className="px-3 py-1 text-xs bg-blue-100 text-blue-800 rounded-full hover:bg-blue-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                      onClick={() => handleGetHelp(deliverable)}
+                      className="flex items-center space-x-2 bg-purple-100 text-purple-800 px-3 py-2 rounded-lg hover:bg-purple-200 transition-colors text-sm"
                     >
-                      In Progress
+                      <HelpCircle className="w-4 h-4" />
+                      <span>Get Help</span>
                     </button>
-                    <button
-                      onClick={() => updateStatus(deliverable.id, "completed")}
-                      disabled={deliverable.status === "completed"}
-                      className="px-3 py-1 text-xs bg-green-100 text-green-800 rounded-full hover:bg-green-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      Complete
-                    </button>
+                  )}
+
+                  {/* File Actions (placeholder for future) */}
+                  <div className="flex space-x-2">
+                    {deliverable.status === "completed" && (
+                      <button className="flex items-center space-x-1 text-green-600 hover:text-green-700 text-sm">
+                        <Download className="w-4 h-4" />
+                        <span>Download</span>
+                      </button>
+                    )}
                   </div>
-                )}
+                </div>
               </div>
             </div>
           ))
         )}
       </div>
+
+      {/* Help Request Modal */}
+      {showHelpModal && selectedDeliverable && (
+        <HelpRequestModal
+          isOpen={showHelpModal}
+          onClose={() => {
+            setShowHelpModal(false);
+            setSelectedDeliverable(null);
+          }}
+          deliverable={selectedDeliverable}
+          user={user}
+        />
+      )}
     </div>
   );
 };

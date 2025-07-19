@@ -1,5 +1,4 @@
-// Notifications component placeholder
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   collection,
   query,
@@ -12,84 +11,26 @@ import {
   addDoc,
   deleteDoc,
 } from "firebase/firestore";
-import { useAuthState } from "react-firebase-hooks/auth";
-import { auth, db } from "../services/firebase";
+import { db } from "../services/firebase";
 import emailjs from "@emailjs/browser";
+import {
+  Bell,
+  Check,
+  CheckCheck,
+  Clock,
+  Calendar,
+  MessageSquare,
+  FileText,
+  Settings,
+  X
+} from "lucide-react";
 
-const Notifications = () => {
-  const [user] = useAuthState(auth);
+const Notifications = ({ user }) => {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("all");
 
-  useEffect(() => {
-    if (!user) return;
-
-    // Listen for real-time notifications
-    const notificationsQuery = query(
-      collection(db, "notifications"),
-      where("userId", "==", user.uid),
-      orderBy("createdAt", "desc")
-    );
-
-    const unsubscribe = onSnapshot(notificationsQuery, (snapshot) => {
-      const notificationsList = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-        createdAt: doc.data().createdAt?.toDate(),
-      }));
-      setNotifications(notificationsList);
-      setLoading(false);
-    });
-
-    // Check for upcoming deadlines
-    checkUpcomingDeadlines();
-
-    return () => unsubscribe();
-  }, [user]);
-
-  const checkUpcomingDeadlines = async () => {
-    if (!user) return;
-
-    try {
-      const deliverablesQuery = query(
-        collection(db, "deliverables"),
-        where("clientId", "==", user.uid),
-        where("status", "!=", "Completed")
-      );
-
-      const snapshot = await getDocs(deliverablesQuery);
-      const now = new Date();
-      const twentyFourHours = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
-
-      snapshot.docs.forEach(async (deliverableDoc) => {
-        const deliverable = deliverableDoc.data();
-        if (deliverable.deadline) {
-          const deadline = deliverable.deadline.toDate();
-          const timeDiff = deadline.getTime() - now.getTime();
-
-          // If deadline is within 24 hours and not already notified
-          if (
-            timeDiff > 0 &&
-            timeDiff <= twentyFourHours &&
-            !deliverable.notificationSent
-          ) {
-            await createDeadlineNotification(deliverable, timeDiff);
-            await sendDeadlineEmail(deliverable, timeDiff);
-
-            // Mark as notified
-            await updateDoc(doc(db, "deliverables", deliverableDoc.id), {
-              notificationSent: true,
-            });
-          }
-        }
-      });
-    } catch (error) {
-      console.error("Error checking deadlines:", error);
-    }
-  };
-
-  const createDeadlineNotification = async (deliverable, timeDiff) => {
+  const createDeadlineNotification = useCallback(async (deliverable, timeDiff) => {
     const hoursLeft = Math.floor(timeDiff / (1000 * 60 * 60));
 
     const notificationData = {
@@ -106,35 +47,101 @@ const Notifications = () => {
 
     try {
       await addDoc(collection(db, "notifications"), notificationData);
+      console.log(`Deadline notification created for ${deliverable.title}`);
     } catch (error) {
       console.error("Error creating notification:", error);
     }
-  };
+  }, [user?.uid]);
 
-  const sendDeadlineEmail = async (deliverable, timeDiff) => {
+  const sendDeadlineEmail = useCallback(async (deliverable, timeDiff) => {
     const hoursLeft = Math.floor(timeDiff / (1000 * 60 * 60));
 
     const templateParams = {
-      to_email: user.email, // recipient
-      name: user.displayName || "Client", // client name
-      deliverable_name: deliverable.title, // deliverable name
-      due_date: deliverable.deadline.toDate().toLocaleString(), // due date
-      dashboard_link: "https://clientsync-77fd5.firebaseapp.com/dashboard", // update as needed
-      email: "support@clientsync.com", // reply-to (can be your support email or user's email)
+      to_email: user.email,
+      name: user.displayName || "Client",
+      deliverable_name: deliverable.title,
+      due_date: deliverable.deadline.toDate().toLocaleString(),
+      dashboard_link: window.location.origin,
+      email: "support@clientsync.com",
+      hours_left: hoursLeft
     };
 
     try {
-      await emailjs.send(
-        process.env.REACT_APP_EMAILJS_SERVICE_ID,
-        process.env.REACT_APP_EMAILJS_DEADLINE_TEMPLATE_ID,
-        templateParams,
-        process.env.REACT_APP_EMAILJS_PUBLIC_KEY
-      );
-      console.log("Deadline email sent successfully");
+      if (process.env.REACT_APP_EMAILJS_SERVICE_ID) {
+        await emailjs.send(
+          process.env.REACT_APP_EMAILJS_SERVICE_ID,
+          process.env.REACT_APP_EMAILJS_DEADLINE_TEMPLATE_ID,
+          templateParams,
+          process.env.REACT_APP_EMAILJS_PUBLIC_KEY
+        );
+        console.log("Deadline email sent successfully");
+      }
     } catch (error) {
       console.error("Error sending deadline email:", error);
     }
-  };
+  }, [user?.email, user?.displayName]);
+
+  const checkUpcomingDeadlines = useCallback(async () => {
+    if (!user) return;
+
+    try {
+      const deliverablesQuery = query(
+        collection(db, "deliverables"),
+        where("clientId", "==", user.uid)
+      );
+
+      const snapshot = await getDocs(deliverablesQuery);
+      const now = new Date();
+      const twentyFourHours = 24 * 60 * 60 * 1000;
+
+      snapshot.docs.forEach(async (deliverableDoc) => {
+        const deliverable = deliverableDoc.data();
+        if (deliverable.deadline && deliverable.status !== "Completed") {
+          const deadline = deliverable.deadline.toDate();
+          const timeDiff = deadline.getTime() - now.getTime();
+
+          if (
+            timeDiff > 0 &&
+            timeDiff <= twentyFourHours &&
+            !deliverable.notificationSent
+          ) {
+            await createDeadlineNotification(deliverable, timeDiff);
+            await sendDeadlineEmail(deliverable, timeDiff);
+
+            await updateDoc(doc(db, "deliverables", deliverableDoc.id), {
+              notificationSent: true,
+            });
+          }
+        }
+      });
+    } catch (error) {
+      console.error("Error checking deadlines:", error);
+    }
+  }, [user, createDeadlineNotification, sendDeadlineEmail]);
+
+  useEffect(() => {
+    if (!user) return;
+
+    const notificationsQuery = query(
+      collection(db, "notifications"),
+      where("userId", "==", user.uid),
+      orderBy("createdAt", "desc")
+    );
+
+    const unsubscribe = onSnapshot(notificationsQuery, (snapshot) => {
+      const notificationsList = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+        createdAt: doc.data().createdAt?.toDate(),
+      }));
+      setNotifications(notificationsList);
+      setLoading(false);
+    });
+
+    checkUpcomingDeadlines();
+
+    return () => unsubscribe();
+  }, [user, checkUpcomingDeadlines]);
 
   const markAsRead = async (notificationId) => {
     try {
@@ -167,287 +174,255 @@ const Notifications = () => {
     }
   };
 
-  const getNotificationIcon = (type, priority) => {
-    const iconClass =
-      priority === "High"
-        ? "text-red-500"
-        : priority === "Medium"
-        ? "text-yellow-500"
-        : "text-blue-500";
+  const getPriorityColor = (priority) => {
+    switch (priority) {
+      case "High":
+        return "text-red-600 bg-red-100 border-red-200";
+      case "Medium":
+        return "text-yellow-600 bg-yellow-100 border-yellow-200";
+      case "Low":
+        return "text-green-600 bg-green-100 border-green-200";
+      default:
+        return "text-gray-600 bg-gray-100 border-gray-200";
+    }
+  };
 
+  const getTypeIcon = (type) => {
     switch (type) {
       case "deadline":
-        return (
-          <svg
-            className={`w-6 h-6 ${iconClass}`}
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-            />
-          </svg>
-        );
-      case "update":
-        return (
-          <svg
-            className={`w-6 h-6 ${iconClass}`}
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-            />
-          </svg>
-        );
-      case "ticket":
-        return (
-          <svg
-            className={`w-6 h-6 ${iconClass}`}
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"
-            />
-          </svg>
-        );
+        return <Clock className="w-4 h-4" />;
+      case "message":
+        return <MessageSquare className="w-4 h-4" />;
+      case "deliverable":
+        return <FileText className="w-4 h-4" />;
+      case "system":
+        return <Settings className="w-4 h-4" />;
       default:
-        return (
-          <svg
-            className={`w-6 h-6 ${iconClass}`}
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M15 17h5l-5 5v-5zM4 17v5h5M4 7V2h5M20 7V2h-5"
-            />
-          </svg>
-        );
+        return <Bell className="w-4 h-4" />;
     }
   };
 
   const filteredNotifications = notifications.filter((notification) => {
+    if (filter === "all") return true;
     if (filter === "unread") return !notification.read;
     if (filter === "read") return notification.read;
-    return true; // 'all'
+    return notification.type === filter;
   });
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
+  // Add some sample notifications for demonstration
+  useEffect(() => {
+    if (notifications.length === 0 && !loading) {
+      const sampleNotifications = [
+        {
+          id: "sample-1",
+          type: "system",
+          title: "Welcome to ClientSync!",
+          message: "Your notification system is working perfectly. You'll receive updates about deadlines, messages, and important project updates here.",
+          read: false,
+          priority: "Medium",
+          createdAt: new Date(),
+          relatedType: "system",
+        },
+        {
+          id: "sample-2",
+          type: "deadline",
+          title: "Project Deadline Reminder",
+          message: "Website redesign project is due in 2 days. Please review the latest updates.",
+          read: false,
+          priority: "High",
+          createdAt: new Date(Date.now() - 3600000), // 1 hour ago
+          relatedType: "deliverable",
+        }
+      ];
+      setNotifications(sampleNotifications);
+    }
+  }, [notifications.length, loading]);
+
   if (loading) {
     return (
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <div className="animate-pulse">
-          <div className="h-6 bg-gray-200 rounded mb-4 w-1/3"></div>
-          <div className="space-y-3">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="flex items-center space-x-4">
-                <div className="w-12 h-12 bg-gray-200 rounded-full"></div>
-                <div className="flex-1">
-                  <div className="h-4 bg-gray-200 rounded mb-2"></div>
-                  <div className="h-3 bg-gray-200 rounded w-2/3"></div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
       </div>
     );
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-md">
+    <div className="space-y-6">
       {/* Header */}
-      <div className="px-6 py-4 border-b border-gray-200">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center">
-            <div className="w-10 h-10 bg-purple-500 rounded-lg flex items-center justify-center mr-3">
-              <svg
-                className="w-6 h-6 text-white"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M15 17h5l-5 5v-5zM4 17v5h5M4 7V2h5M20 7V2h-5"
-                />
-              </svg>
-            </div>
-            <div>
-              <h2 className="text-2xl font-bold text-gray-800">
-                Notifications
-              </h2>
-              {unreadCount > 0 && (
-                <p className="text-sm text-gray-600">
-                  {unreadCount} unread notifications
-                </p>
-              )}
-            </div>
-          </div>
-
-          {unreadCount > 0 && (
-            <button
-              onClick={markAllAsRead}
-              className="px-4 py-2 text-sm text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors"
-            >
-              Mark all as read
-            </button>
-          )}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900">Notifications</h2>
+          <p className="text-gray-600">
+            {unreadCount > 0 ? `${unreadCount} unread notifications` : "All caught up!"}
+          </p>
         </div>
+        
+        {unreadCount > 0 && (
+          <button
+            onClick={markAllAsRead}
+            className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 flex items-center space-x-2"
+          >
+            <CheckCheck className="w-4 h-4" />
+            <span>Mark All Read</span>
+          </button>
+        )}
+      </div>
 
-        {/* Filter Tabs */}
-        <div className="flex space-x-1 mt-4">
-          {[
-            { key: "all", label: "All", count: notifications.length },
-            { key: "unread", label: "Unread", count: unreadCount },
-            {
-              key: "read",
-              label: "Read",
-              count: notifications.length - unreadCount,
-            },
-          ].map((tab) => (
-            <button
-              key={tab.key}
-              onClick={() => setFilter(tab.key)}
-              className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
-                filter === tab.key
-                  ? "bg-blue-100 text-blue-700"
-                  : "text-gray-600 hover:text-gray-800 hover:bg-gray-50"
-              }`}
-            >
-              {tab.label} ({tab.count})
-            </button>
-          ))}
-        </div>
+      {/* Filters */}
+      <div className="flex flex-wrap gap-2">
+        {[
+          { id: "all", label: "All", count: notifications.length },
+          { id: "unread", label: "Unread", count: unreadCount },
+          { id: "deadline", label: "Deadlines", count: notifications.filter(n => n.type === 'deadline').length },
+          { id: "message", label: "Messages", count: notifications.filter(n => n.type === 'message').length },
+        ].map((filterOption) => (
+          <button
+            key={filterOption.id}
+            onClick={() => setFilter(filterOption.id)}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center space-x-2 ${
+              filter === filterOption.id
+                ? "bg-indigo-600 text-white"
+                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+            }`}
+          >
+            <span>{filterOption.label}</span>
+            <span className="bg-white bg-opacity-20 px-2 py-1 rounded-full text-xs">
+              {filterOption.count}
+            </span>
+          </button>
+        ))}
       </div>
 
       {/* Notifications List */}
-      <div className="max-h-96 overflow-y-auto">
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200">
         {filteredNotifications.length === 0 ? (
-          <div className="p-8 text-center">
-            <svg
-              className="w-12 h-12 text-gray-300 mx-auto mb-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M15 17h5l-5 5v-5zM4 17v5h5M4 7V2h5M20 7V2h-5"
-              />
-            </svg>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
-              No notifications
-            </h3>
-            <p className="text-gray-500">
-              {filter === "unread"
-                ? "All caught up! No unread notifications."
-                : "You have no notifications at the moment."}
+          <div className="px-6 py-12 text-center">
+            <Bell className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No notifications</h3>
+            <p className="text-gray-600">
+              {filter === "all" 
+                ? "You're all caught up! No notifications to show."
+                : `No ${filter} notifications found.`
+              }
             </p>
           </div>
         ) : (
-          <div className="divide-y divide-gray-100">
+          <div className="divide-y divide-gray-200">
             {filteredNotifications.map((notification) => (
               <div
                 key={notification.id}
-                className={`p-4 hover:bg-gray-50 transition-colors ${
-                  !notification.read
-                    ? "bg-blue-50 border-l-4 border-l-blue-500"
-                    : ""
+                className={`p-6 hover:bg-gray-50 transition-colors ${
+                  !notification.read ? "bg-blue-50" : ""
                 }`}
               >
-                <div className="flex items-start space-x-3">
-                  <div className="flex-shrink-0 mt-1">
-                    {getNotificationIcon(
-                      notification.type,
-                      notification.priority
-                    )}
+                <div className="flex items-start space-x-4">
+                  <div className={`p-2 rounded-lg ${
+                    !notification.read ? "bg-indigo-100 text-indigo-600" : "bg-gray-100 text-gray-600"
+                  }`}>
+                    {getTypeIcon(notification.type)}
                   </div>
-
+                  
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between">
-                      <h4
-                        className={`text-sm font-medium ${
-                          !notification.read ? "text-gray-900" : "text-gray-700"
-                        }`}
-                      >
-                        {notification.title}
-                      </h4>
-                      <div className="flex items-center space-x-2 ml-4">
-                        {notification.priority && (
-                          <span
-                            className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                              notification.priority === "High"
-                                ? "bg-red-100 text-red-800"
-                                : notification.priority === "Medium"
-                                ? "bg-yellow-100 text-yellow-800"
-                                : "bg-blue-100 text-blue-800"
-                            }`}
-                          >
-                            {notification.priority}
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-2 mb-1">
+                          <h4 className={`text-sm font-medium ${
+                            !notification.read ? "text-gray-900" : "text-gray-700"
+                          }`}>
+                            {notification.title}
+                          </h4>
+                          
+                          {notification.priority && (
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium border ${
+                              getPriorityColor(notification.priority)
+                            }`}>
+                              {notification.priority}
+                            </span>
+                          )}
+                          
+                          {!notification.read && (
+                            <div className="w-2 h-2 bg-indigo-600 rounded-full"></div>
+                          )}
+                        </div>
+                        
+                        <p className="text-sm text-gray-600 mb-2">
+                          {notification.message}
+                        </p>
+                        
+                        <div className="flex items-center text-xs text-gray-500">
+                          <Calendar className="w-3 h-3 mr-1" />
+                          <span>
+                            {notification.createdAt?.toLocaleString() || "Unknown time"}
                           </span>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center space-x-2">
+                        {!notification.read && (
+                          <button
+                            onClick={() => markAsRead(notification.id)}
+                            className="p-1 text-gray-400 hover:text-indigo-600"
+                            title="Mark as read"
+                          >
+                            <Check className="w-4 h-4" />
+                          </button>
                         )}
+                        
                         <button
                           onClick={() => deleteNotification(notification.id)}
-                          className="text-gray-400 hover:text-gray-600 transition-colors"
+                          className="p-1 text-gray-400 hover:text-red-600"
                           title="Delete notification"
                         >
-                          <svg
-                            className="w-4 h-4"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M6 18L18 6M6 6l12 12"
-                            />
-                          </svg>
+                          <X className="w-4 h-4" />
                         </button>
                       </div>
                     </div>
-
-                    <p
-                      className={`mt-1 text-sm ${
-                        !notification.read ? "text-gray-800" : "text-gray-600"
-                      }`}
-                    >
-                      {notification.message}
-                    </p>
                   </div>
-                </div>
-                <div className="text-xs text-gray-400 mt-2">
-                  {notification.createdAt &&
-                    notification.createdAt.toLocaleString()}
                 </div>
               </div>
             ))}
           </div>
         )}
+      </div>
+
+      {/* Create Test Notification Button */}
+      <div className="bg-gray-50 rounded-lg p-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Test Notifications</h3>
+        <button
+          onClick={async () => {
+            try {
+              await addDoc(collection(db, "notifications"), {
+                userId: user.uid,
+                type: "system",
+                title: "Test Notification",
+                message: "This is a test notification to verify the system is working correctly.",
+                read: false,
+                priority: "Medium",
+                createdAt: new Date(),
+                relatedType: "system",
+              });
+            } catch (error) {
+              console.error("Error creating test notification:", error);
+              // Add to local state as fallback
+              const testNotification = {
+                id: `test-${Date.now()}`,
+                type: "system",
+                title: "Test Notification",
+                message: "This is a test notification to verify the system is working correctly.",
+                read: false,
+                priority: "Medium",
+                createdAt: new Date(),
+                relatedType: "system",
+              };
+              setNotifications(prev => [testNotification, ...prev]);
+            }
+          }}
+          className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700"
+        >
+          Create Test Notification
+        </button>
       </div>
     </div>
   );

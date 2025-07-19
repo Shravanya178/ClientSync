@@ -14,38 +14,62 @@ const Updates = ({ user, isAdminView }) => {
   const [updates, setUpdates] = useState([]);
   const [loading, setLoading] = useState(true);
   const [newUpdate, setNewUpdate] = useState("");
+  const [updateType, setUpdateType] = useState("general");
+  const [targetClientId, setTargetClientId] = useState("");
   const [showAddForm, setShowAddForm] = useState(false);
 
   useEffect(() => {
     const updatesRef = collection(db, "updates");
-    const q = query(updatesRef, orderBy("createdAt", "desc"));
+    let q;
+    
+    if (isAdminView) {
+      // Admin sees all updates
+      q = query(updatesRef, orderBy("createdAt", "desc"));
+    } else {
+      // Client sees only general updates and updates targeted to them
+      q = query(
+        updatesRef,
+        orderBy("createdAt", "desc")
+      );
+    }
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const updatesData = snapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
         createdAt: doc.data().createdAt?.toDate(),
-      }));
+      })).filter(update => {
+        // Filter client-specific updates on the frontend
+        if (isAdminView) return true;
+        return !update.targetClientId || update.targetClientId === user.uid || update.type === "general";
+      });
+      
       setUpdates(updatesData);
       setLoading(false);
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [user.uid, isAdminView]);
 
   const handleAddUpdate = async (e) => {
     e.preventDefault();
     if (!newUpdate.trim()) return;
 
     try {
-      await addDoc(collection(db, "updates"), {
+      const updateData = {
         title: newUpdate,
         description: "Project update added by admin",
         createdAt: serverTimestamp(),
         author: user.displayName || user.email,
-        type: "general",
-      });
+        type: updateType,
+        targetClientId: updateType === "client-specific" ? targetClientId : null,
+      };
+
+      await addDoc(collection(db, "updates"), updateData);
+      
       setNewUpdate("");
+      setUpdateType("general");
+      setTargetClientId("");
       setShowAddForm(false);
     } catch (error) {
       console.error("Error adding update:", error);
@@ -71,7 +95,9 @@ const Updates = ({ user, isAdminView }) => {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h3 className="text-2xl font-bold text-gray-900">Project Updates</h3>
+        <h3 className="text-2xl font-bold text-gray-900">
+          {isAdminView ? "All Updates" : "Project Updates"}
+        </h3>
         {isAdminView && (
           <button
             onClick={() => setShowAddForm(!showAddForm)}
@@ -99,6 +125,40 @@ const Updates = ({ user, isAdminView }) => {
                 placeholder="Enter update title..."
               />
             </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Update Type
+                </label>
+                <select
+                  value={updateType}
+                  onChange={(e) => setUpdateType(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                >
+                  <option value="general">General (All Clients)</option>
+                  <option value="client-specific">Client Specific</option>
+                  <option value="announcement">Announcement</option>
+                </select>
+              </div>
+              
+              {updateType === "client-specific" && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Target Client ID
+                  </label>
+                  <input
+                    type="text"
+                    value={targetClientId}
+                    onChange={(e) => setTargetClientId(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    placeholder="Enter client user ID..."
+                    required
+                  />
+                </div>
+              )}
+            </div>
+            
             <div className="flex justify-end space-x-3">
               <button
                 type="button"
@@ -145,6 +205,11 @@ const Updates = ({ user, isAdminView }) => {
                   <div className="flex items-center justify-between mb-2">
                     <h4 className="text-lg font-semibold text-gray-900">
                       {update.title}
+                      {update.targetClientId && (
+                        <span className="ml-2 inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                          Private
+                        </span>
+                      )}
                     </h4>
                     <div className="flex items-center text-sm text-gray-500">
                       <Clock className="w-4 h-4 mr-1" />
@@ -157,7 +222,7 @@ const Updates = ({ user, isAdminView }) => {
                       By {update.author}
                     </span>
                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
-                      {update.type || "General"}
+                      {update.type === "client-specific" ? "Private" : update.type || "General"}
                     </span>
                   </div>
                 </div>
