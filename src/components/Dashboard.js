@@ -4,11 +4,7 @@ import { signOut } from "firebase/auth";
 import { auth } from "../services/firebase";
 import {
   LogOut,
-  Settings,
-  Bell,
   User,
-  ToggleLeft,
-  ToggleRight,
 } from "lucide-react";
 import Updates from "./Updates";
 import Deliverables from "./Deliverables";
@@ -17,7 +13,6 @@ import Notifications from "./Notifications";
 
 const Dashboard = ({ user }) => {
   const [activeTab, setActiveTab] = useState("updates");
-  const [isAdminView, setIsAdminView] = useState(false);
 
   const handleSignOut = async () => {
     try {
@@ -41,43 +36,11 @@ const Dashboard = ({ user }) => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
-              <h1 className="text-2xl font-bold text-indigo-600">ProjEase</h1>
+              <h1 className="text-2xl font-bold text-indigo-600">ClientSync</h1>
               <span className="ml-2 text-sm text-gray-500">Client Portal</span>
             </div>
 
             <div className="flex items-center space-x-4">
-              {/* Admin/Client View Toggle */}
-              <div className="flex items-center space-x-2">
-                <span
-                  className={`text-sm ${
-                    !isAdminView
-                      ? "text-indigo-600 font-medium"
-                      : "text-gray-500"
-                  }`}
-                >
-                  Client
-                </span>
-                <button
-                  onClick={() => setIsAdminView(!isAdminView)}
-                  className="text-indigo-600 hover:text-indigo-700"
-                >
-                  {isAdminView ? (
-                    <ToggleRight className="w-6 h-6" />
-                  ) : (
-                    <ToggleLeft className="w-6 h-6" />
-                  )}
-                </button>
-                <span
-                  className={`text-sm ${
-                    isAdminView
-                      ? "text-indigo-600 font-medium"
-                      : "text-gray-500"
-                  }`}
-                >
-                  Admin
-                </span>
-              </div>
-
               <div className="flex items-center space-x-3">
                 <div className="flex items-center space-x-2">
                   <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center">
@@ -134,13 +97,13 @@ const Dashboard = ({ user }) => {
         {/* Tab Content */}
         <div className="fade-in">
           {activeTab === "updates" && (
-            <Updates user={user} isAdminView={isAdminView} />
+            <Updates user={user} />
           )}
           {activeTab === "deliverables" && (
-            <Deliverables user={user} isAdminView={isAdminView} />
+            <Deliverables user={user} />
           )}
           {activeTab === "tickets" && (
-            <TicketForm user={user} isAdminView={isAdminView} />
+            <TicketForm user={user} />
           )}
           {activeTab === "notifications" && <Notifications user={user} />}
         </div>

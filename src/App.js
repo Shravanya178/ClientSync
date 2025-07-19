@@ -10,6 +10,7 @@ import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "./services/firebase";
 import Login from "./components/Login";
 import Dashboard from "./components/Dashboard";
+import AdminDashboard from "./components/AdminDashboard";
 import "./App.css";
 
 function App() {
@@ -45,6 +46,12 @@ function App() {
             path="/dashboard"
             element={
               user ? <Dashboard user={user} /> : <Navigate to="/login" />
+            }
+          />
+          <Route
+            path="/admin"
+            element={
+              user ? <AdminDashboard user={user} /> : <Navigate to="/login" />
             }
           />
           <Route

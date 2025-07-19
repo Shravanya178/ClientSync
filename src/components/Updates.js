@@ -4,17 +4,13 @@ import {
   query,
   orderBy,
   onSnapshot,
-  addDoc,
-  serverTimestamp,
 } from "firebase/firestore";
 import { db } from "../services/firebase";
-import { Clock, MessageSquare, Plus, Send } from "lucide-react";
+import { Clock, MessageSquare, FileAudio } from "lucide-react";
 
-const Updates = ({ user, isAdminView }) => {
+const Updates = ({ user }) => {
   const [updates, setUpdates] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [newUpdate, setNewUpdate] = useState("");
-  const [showAddForm, setShowAddForm] = useState(false);
 
   useEffect(() => {
     const updatesRef = collection(db, "updates");
@@ -32,25 +28,6 @@ const Updates = ({ user, isAdminView }) => {
 
     return () => unsubscribe();
   }, []);
-
-  const handleAddUpdate = async (e) => {
-    e.preventDefault();
-    if (!newUpdate.trim()) return;
-
-    try {
-      await addDoc(collection(db, "updates"), {
-        title: newUpdate,
-        description: "Project update added by admin",
-        createdAt: serverTimestamp(),
-        author: user.displayName || user.email,
-        type: "general",
-      });
-      setNewUpdate("");
-      setShowAddForm(false);
-    } catch (error) {
-      console.error("Error adding update:", error);
-    }
-  };
 
   const formatDate = (date) => {
     if (!date) return "Just now";
@@ -72,52 +49,7 @@ const Updates = ({ user, isAdminView }) => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h3 className="text-2xl font-bold text-gray-900">Project Updates</h3>
-        {isAdminView && (
-          <button
-            onClick={() => setShowAddForm(!showAddForm)}
-            className="flex items-center space-x-2 bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Add Update</span>
-          </button>
-        )}
       </div>
-
-      {/* Add Update Form (Admin Only) */}
-      {isAdminView && showAddForm && (
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 slide-in">
-          <form onSubmit={handleAddUpdate} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Update Title
-              </label>
-              <input
-                type="text"
-                value={newUpdate}
-                onChange={(e) => setNewUpdate(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                placeholder="Enter update title..."
-              />
-            </div>
-            <div className="flex justify-end space-x-3">
-              <button
-                type="button"
-                onClick={() => setShowAddForm(false)}
-                className="px-4 py-2 text-gray-600 hover:text-gray-800"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                className="flex items-center space-x-2 bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700"
-              >
-                <Send className="w-4 h-4" />
-                <span>Post Update</span>
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
 
       {/* Updates Feed */}
       <div className="space-y-4">
@@ -128,7 +60,7 @@ const Updates = ({ user, isAdminView }) => {
               No updates yet
             </h3>
             <p className="text-gray-600">
-              Check back later for project updates.
+              Check back later for project updates from your admin.
             </p>
           </div>
         ) : (
@@ -139,7 +71,11 @@ const Updates = ({ user, isAdminView }) => {
             >
               <div className="flex items-start space-x-4">
                 <div className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center flex-shrink-0">
-                  <MessageSquare className="w-5 h-5 text-indigo-600" />
+                  {update.type === "voice-note" ? (
+                    <FileAudio className="w-5 h-5 text-indigo-600" />
+                  ) : (
+                    <MessageSquare className="w-5 h-5 text-indigo-600" />
+                  )}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between mb-2">
@@ -152,13 +88,35 @@ const Updates = ({ user, isAdminView }) => {
                     </div>
                   </div>
                   <p className="text-gray-700 mb-3">{update.description}</p>
+                  
+                  {/* Voice Note Player */}
+                  {update.voiceNoteUrl && (
+                    <div className="mt-3 p-3 bg-gray-50 rounded border">
+                      <div className="flex items-center space-x-2 mb-2">
+                        <FileAudio className="w-4 h-4 text-blue-600" />
+                        <span className="text-sm font-medium text-gray-700">Voice Note</span>
+                      </div>
+                      <audio controls className="w-full">
+                        <source src={update.voiceNoteUrl} type="audio/wav" />
+                        Your browser does not support the audio element.
+                      </audio>
+                    </div>
+                  )}
+                  
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-gray-500">
                       By {update.author}
                     </span>
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
-                      {update.type || "General"}
-                    </span>
+                    <div className="flex space-x-2">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
+                        {update.type === "voice-note" ? "Voice Note" : "Text Update"}
+                      </span>
+                      {update.clientName && (
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                          Client: {update.clientName}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
