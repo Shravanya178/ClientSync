@@ -112,13 +112,12 @@ const Notifications = () => {
     const hoursLeft = Math.floor(timeDiff / (1000 * 60 * 60));
 
     const templateParams = {
-      to_name: user.displayName || "Client",
-      to_email: user.email,
-      project_name: deliverable.projectName || "Your Project",
-      deliverable_title: deliverable.title,
-      hours_left: hoursLeft,
-      deadline_date: deliverable.deadline.toDate().toLocaleDateString(),
-      deadline_time: deliverable.deadline.toDate().toLocaleTimeString(),
+      to_email: user.email, // recipient
+      name: user.displayName || "Client", // client name
+      deliverable_name: deliverable.title, // deliverable name
+      due_date: deliverable.deadline.toDate().toLocaleString(), // due date
+      dashboard_link: "https://yourapp.com/dashboard", // or dynamically generate if needed
+      email: "your@email.com" // reply-to (can be your support email or user's email)
     };
 
     try {
@@ -432,34 +431,4 @@ const Notifications = () => {
                     <p
                       className={`mt-1 text-sm ${
                         !notification.read ? "text-gray-800" : "text-gray-600"
-                      }`}
-                    >
-                      {notification.message}
-                    </p>
-
-                    <div className="flex items-center justify-between mt-2">
-                      <p className="text-xs text-gray-500">
-                        {notification.createdAt?.toLocaleString()}
-                      </p>
-
-                      {!notification.read && (
-                        <button
-                          onClick={() => markAsRead(notification.id)}
-                          className="text-xs text-blue-600 hover:text-blue-800 font-medium transition-colors"
-                        >
-                          Mark as read
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};
-
-export default Notifications;
+                      }`
