@@ -8,6 +8,9 @@ import {
   orderBy,
   updateDoc,
   doc,
+  getDocs,
+  addDoc,
+  deleteDoc,
 } from "firebase/firestore";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { auth, db } from "../services/firebase";
