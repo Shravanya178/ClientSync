@@ -116,8 +116,8 @@ const Notifications = () => {
       name: user.displayName || "Client", // client name
       deliverable_name: deliverable.title, // deliverable name
       due_date: deliverable.deadline.toDate().toLocaleString(), // due date
-      dashboard_link: "https://yourapp.com/dashboard", // or dynamically generate if needed
-      email: "your@email.com" // reply-to (can be your support email or user's email)
+      dashboard_link: "https://clientsync-77fd5.firebaseapp.com/dashboard", // update as needed
+      email: "support@clientsync.com", // reply-to (can be your support email or user's email)
     };
 
     try {
@@ -431,4 +431,23 @@ const Notifications = () => {
                     <p
                       className={`mt-1 text-sm ${
                         !notification.read ? "text-gray-800" : "text-gray-600"
-                      }`
+                      }`}
+                    >
+                      {notification.message}
+                    </p>
+                  </div>
+                </div>
+                <div className="text-xs text-gray-400 mt-2">
+                  {notification.createdAt &&
+                    notification.createdAt.toLocaleString()}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default Notifications;
