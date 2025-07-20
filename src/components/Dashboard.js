@@ -16,6 +16,7 @@ import AdminHelpRequests from "./AdminHelpRequests";
 import MessagingHub from "./MessagingHub";
 import FileUploadManager from "./FileUploadManager";
 import ProgressTracker from "./ProgressTracker";
+import ClientProfile from "./ClientProfile";
 
 const Dashboard = ({ user, userRole }) => {
   const [activeTab, setActiveTab] = useState("updates");
@@ -37,6 +38,7 @@ const Dashboard = ({ user, userRole }) => {
     { id: "messaging", label: "Messages", icon: "💬" },
     { id: "tickets", label: "Support", icon: "🎫" },
     { id: "notifications", label: "Notifications", icon: "🔔" },
+    { id: "profile", label: "Profile", icon: "👤" },
     ...(isAdmin ? [{ id: "help-requests", label: "Help Requests", icon: "🆘" }] : []),
   ];
 
@@ -160,6 +162,7 @@ const Dashboard = ({ user, userRole }) => {
             <TicketForm user={user} isAdminView={isAdmin} />
           )}
           {activeTab === "notifications" && <Notifications user={user} />}
+          {activeTab === "profile" && <ClientProfile user={user} isAdminView={isAdmin} />}
           {activeTab === "help-requests" && isAdmin && (
             <AdminHelpRequests user={user} />
           )}
