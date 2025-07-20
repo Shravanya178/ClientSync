@@ -257,9 +257,3 @@ npm start
 
 The application will run on `http://localhost:3003` with separate login portals and full client management capabilities.
 
-## 👨‍💻 **Team**
-
-- **Khushi** - Frontend Developer
-- **Shravanya** - Full Stack Developer & Project Lead
-- **Sanket** - Backend Developer
-- **Team Members** - UX/UI Design & Testing
