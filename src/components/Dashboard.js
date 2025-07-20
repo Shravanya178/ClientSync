@@ -13,7 +13,10 @@ import {
   Ticket,
   Bell,
   Search,
-  Settings
+  Settings,
+  Mail,
+  UserCircle,
+  FileText
 } from "lucide-react";
 import Updates from "./Updates";
 import NotificationsCompact from "./NotificationsCompact";
@@ -21,6 +24,9 @@ import Projects from "./Projects";
 import Deliverables from "./Deliverables";
 import TicketForm from "./TicketForm";
 import AdminDashboard from "../pages/AdminDashboard";
+import Messages from "../pages/Messages";
+import Profile from "../pages/Profile";
+import FileUploadManager from "../pages/FileUploadManager";
 
 const Dashboard = ({ user }) => {
   const [activeTab, setActiveTab] = useState("home");
@@ -39,8 +45,11 @@ const Dashboard = ({ user }) => {
     { id: "projects", label: "Projects", icon: FolderOpen },
     { id: "updates", label: "Updates", icon: MessageSquare },
     { id: "deliverables", label: "Deliverables", icon: CheckSquare },
+    { id: "files", label: "File Manager", icon: FileText },
     { id: "tickets", label: "Tickets", icon: Ticket },
+    { id: "messages", label: "Messages", icon: Mail },
     { id: "notifications", label: "Notifications", icon: Bell },
+    { id: "profile", label: "Profile", icon: UserCircle },
   ];
 
   return (
@@ -354,10 +363,19 @@ const Dashboard = ({ user }) => {
           {activeTab === "deliverables" && (
             <Deliverables user={user} isAdminView={isAdminView} />
           )}
+          {activeTab === "files" && (
+            <FileUploadManager user={user} isAdminView={isAdminView} />
+          )}
           {activeTab === "tickets" && (
             <TicketForm user={user} isAdminView={isAdminView} />
           )}
+          {activeTab === "messages" && (
+            <Messages user={user} isAdminView={isAdminView} />
+          )}
           {activeTab === "notifications" && <NotificationsCompact user={user} />}
+          {activeTab === "profile" && (
+            <Profile user={user} isAdminView={isAdminView} />
+          )}
         </div>
       </div>
         </div>

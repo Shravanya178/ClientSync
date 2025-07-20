@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { signOut } from "firebase/auth";
 import { auth } from "../services/firebase";
 import {
@@ -8,11 +8,13 @@ import {
   FolderOpen,
   Plus,
   Settings,
+  MessageSquare,
 } from "lucide-react";
 import AdminUpdates from "./AdminUpdates";
 import AdminDeliverables from "./AdminDeliverables";
 import AdminTickets from "./AdminTickets";
 import ClientManagement from "./ClientManagement";
+import Messages from "./Messages";
 
 const AdminDashboard = ({ user }) => {
   const [activeTab, setActiveTab] = useState("clients");
@@ -29,6 +31,7 @@ const AdminDashboard = ({ user }) => {
 
   const tabs = [
     { id: "clients", label: "Client Management", icon: <Users className="w-4 h-4" /> },
+    { id: "messages", label: "Messages", icon: <MessageSquare className="w-4 h-4" /> },
     { id: "updates", label: "Updates", icon: <FolderOpen className="w-4 h-4" /> },
     { id: "deliverables", label: "Deliverables", icon: <Plus className="w-4 h-4" /> },
     { id: "tickets", label: "Tickets", icon: <Settings className="w-4 h-4" /> },
@@ -146,6 +149,11 @@ const AdminDashboard = ({ user }) => {
               selectedClient={selectedClient}
               selectedProject={selectedProject}
             />
+          )}
+          {activeTab === "messages" && (
+            <div className="bg-white rounded-2xl shadow-sm border border-black overflow-hidden" style={{ height: 'calc(100vh - 400px)' }}>
+              <Messages user={user} isAdminView={true} />
+            </div>
           )}
           {activeTab === "updates" && (
             <AdminUpdates 
