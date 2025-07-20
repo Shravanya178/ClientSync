@@ -69,23 +69,36 @@ const Updates = ({ user, isAdminView }) => {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h3 className="text-2xl font-bold text-gray-900">Project Updates</h3>
+    <div className="bg-white rounded-lg shadow-md p-6 border border-gray-200">
+      {/* Header */}
+      <div className="flex justify-between items-center mb-6">
+        <div>
+          <h2 className="text-lg font-semibold text-gray-900 flex items-center">
+            <span className="mr-2">📰</span>
+            Recent Updates
+          </h2>
+          <p className="text-sm text-gray-600 mt-1">
+            Latest project news and announcements
+          </p>
+        </div>
+        
         {isAdminView && (
           <button
             onClick={() => setShowAddForm(!showAddForm)}
-            className="flex items-center space-x-2 bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700"
+            className="bg-indigo-600 text-white p-2 rounded-lg hover:bg-indigo-700 transition-colors"
           >
             <Plus className="w-4 h-4" />
-            <span>Add Update</span>
           </button>
         )}
       </div>
 
-      {/* Add Update Form (Admin Only) */}
-      {isAdminView && showAddForm && (
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 slide-in">
+      {/* Add Update Form - Enhanced */}
+      {showAddForm && isAdminView && (
+        <div className="bg-gradient-to-br from-indigo-50 to-blue-50 rounded-2xl p-6 mb-6 border-2 border-indigo-200 shadow-lg">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+            <Plus className="w-5 h-5 mr-2 text-indigo-600" />
+            Add New Update
+          </h3>
           <form onSubmit={handleAddUpdate} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -95,21 +108,22 @@ const Updates = ({ user, isAdminView }) => {
                 type="text"
                 value={newUpdate}
                 onChange={(e) => setNewUpdate(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                 placeholder="Enter update title..."
+                className="w-full px-4 py-3 border-2 border-indigo-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
+                required
               />
             </div>
-            <div className="flex justify-end space-x-3">
+            <div className="flex justify-end space-x-3 pt-2">
               <button
                 type="button"
                 onClick={() => setShowAddForm(false)}
-                className="px-4 py-2 text-gray-600 hover:text-gray-800"
+                className="px-6 py-2 text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-xl transition-all font-medium"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="flex items-center space-x-2 bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700"
+                className="bg-gradient-to-r from-indigo-600 to-blue-600 text-white px-6 py-2 rounded-xl hover:from-indigo-700 hover:to-blue-700 transition-all flex items-center space-x-2 shadow-lg font-medium"
               >
                 <Send className="w-4 h-4" />
                 <span>Post Update</span>
@@ -119,51 +133,40 @@ const Updates = ({ user, isAdminView }) => {
         </div>
       )}
 
-      {/* Updates Feed */}
-      <div className="space-y-4">
+      {/* Updates List - Compact */}
+      <div className="space-y-3">
         {updates.length === 0 ? (
-          <div className="text-center py-12 bg-white rounded-lg border border-gray-200">
-            <MessageSquare className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
-              No updates yet
-            </h3>
-            <p className="text-gray-600">
-              Check back later for project updates.
-            </p>
+          <div className="text-center py-8 text-gray-500">
+            <MessageSquare className="w-8 h-8 mx-auto mb-2 text-gray-400" />
+            <p className="text-sm">No updates yet</p>
           </div>
         ) : (
-          updates.map((update) => (
+          updates.slice(0, 4).map((update) => (
             <div
               key={update.id}
-              className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow"
+              className="border-l-4 border-indigo-500 pl-4 py-2 hover:bg-gray-50 rounded-r-lg transition-colors"
             >
-              <div className="flex items-start space-x-4">
-                <div className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center flex-shrink-0">
-                  <MessageSquare className="w-5 h-5 text-indigo-600" />
+              <div className="flex justify-between items-start">
+                <div className="flex-1">
+                  <h4 className="font-medium text-gray-900 text-sm">
+                    {update.title}
+                  </h4>
+                  <p className="text-xs text-gray-500 mt-1">
+                    by {update.author} • {formatDate(update.createdAt)}
+                  </p>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between mb-2">
-                    <h4 className="text-lg font-semibold text-gray-900">
-                      {update.title}
-                    </h4>
-                    <div className="flex items-center text-sm text-gray-500">
-                      <Clock className="w-4 h-4 mr-1" />
-                      {formatDate(update.createdAt)}
-                    </div>
-                  </div>
-                  <p className="text-gray-700 mb-3">{update.description}</p>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-500">
-                      By {update.author}
-                    </span>
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
-                      {update.type || "General"}
-                    </span>
-                  </div>
-                </div>
+                <Clock className="w-4 h-4 text-gray-400 ml-2 flex-shrink-0" />
               </div>
             </div>
           ))
+        )}
+        
+        {updates.length > 4 && (
+          <div className="text-center pt-2">
+            <button className="text-indigo-600 hover:text-indigo-700 text-sm font-medium">
+              View all updates ({updates.length})
+            </button>
+          </div>
         )}
       </div>
     </div>

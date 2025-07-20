@@ -43,12 +43,24 @@ const Deliverables = ({ user, isAdminView }) => {
         deadline: doc.data().deadline?.toDate(),
         createdAt: doc.data().createdAt?.toDate(),
       }));
-      setDeliverables(deliverablesData);
+      
+      // Filter deliverables for the current user (when not in admin view)
+      let filteredData = deliverablesData;
+      if (!isAdminView) {
+        // Show deliverables for the current user based on email or display name
+        filteredData = deliverablesData.filter(deliverable => 
+          deliverable.clientName === (user.displayName || user.email) ||
+          deliverable.createdBy === user.uid ||
+          !deliverable.clientName // Show legacy deliverables without client assignment
+        );
+      }
+      
+      setDeliverables(filteredData);
       setLoading(false);
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [isAdminView, user]);
 
   const handleAddDeliverable = async (e) => {
     e.preventDefault();
@@ -63,6 +75,9 @@ const Deliverables = ({ user, isAdminView }) => {
         status: "pending",
         createdAt: serverTimestamp(),
         createdBy: user.uid,
+        clientName: isAdminView ? "All Clients" : (user.displayName || user.email),
+        projectName: "General",
+        isFromAdmin: isAdminView,
       });
       setNewDeliverable({
         title: "",
@@ -148,39 +163,55 @@ const Deliverables = ({ user, isAdminView }) => {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h3 className="text-2xl font-bold text-gray-900">Deliverables</h3>
-        {isAdminView && (
-          <button
-            onClick={() => setShowAddForm(!showAddForm)}
-            className="flex items-center space-x-2 bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Add Deliverable</span>
-          </button>
-        )}
+      <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl p-6 text-white border-2 border-black">
+        <div className="flex justify-between items-center">
+          <div>
+            <h3 className="text-2xl font-bold flex items-center">
+              <CheckCircle className="w-8 h-8 mr-3" />
+              Deliverables
+            </h3>
+            <p className="text-blue-100 mt-1">
+              {isAdminView ? "Manage client deliverables and deadlines" : "Track your project deliverables"}
+            </p>
+          </div>
+          {isAdminView && (
+            <button
+              onClick={() => setShowAddForm(!showAddForm)}
+              className="flex items-center space-x-2 bg-white text-blue-600 px-6 py-3 rounded-xl hover:bg-blue-50 transition-all shadow-lg font-medium"
+            >
+              <Plus className="w-5 h-5" />
+              <span>Add Deliverable</span>
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Filter Tabs */}
-      <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg">
-        {["all", "pending", "in-progress", "completed"].map((status) => (
-          <button
-            key={status}
-            onClick={() => setFilter(status)}
-            className={`flex-1 px-4 py-2 rounded-md text-sm font-medium capitalize transition-all ${
-              filter === status
-                ? "bg-white text-indigo-600 shadow-sm"
-                : "text-gray-600 hover:text-gray-800 hover:bg-gray-50"
-            }`}
-          >
-            {status === "all" ? "All Items" : status.replace("-", " ")}
-          </button>
-        ))}
+      <div className="bg-white rounded-2xl p-2 shadow-lg border-2 border-black">
+        <div className="flex space-x-1">
+          {["all", "pending", "in-progress", "completed"].map((status) => (
+            <button
+              key={status}
+              onClick={() => setFilter(status)}
+              className={`flex-1 px-4 py-3 rounded-xl text-sm font-medium capitalize transition-all ${
+                filter === status
+                  ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg"
+                  : "text-gray-600 hover:text-gray-800 hover:bg-gray-100"
+              }`}
+            >
+              {status === "all" ? "All Items" : status.replace("-", " ")}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Add Deliverable Form (Admin Only) */}
       {isAdminView && showAddForm && (
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 slide-in">
+        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-6 rounded-2xl shadow-lg border border-blue-200 slide-in">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+            <Plus className="w-5 h-5 mr-2 text-blue-600" />
+            Add New Deliverable
+          </h3>
           <form onSubmit={handleAddDeliverable} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
@@ -196,7 +227,7 @@ const Deliverables = ({ user, isAdminView }) => {
                       title: e.target.value,
                     })
                   }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border-2 border-blue-200 rounded-xl bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                   placeholder="Deliverable title..."
                 />
               </div>
@@ -213,7 +244,7 @@ const Deliverables = ({ user, isAdminView }) => {
                       deadline: e.target.value,
                     })
                   }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border-2 border-blue-200 rounded-xl bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                 />
               </div>
             </div>
@@ -230,7 +261,7 @@ const Deliverables = ({ user, isAdminView }) => {
                   })
                 }
                 rows={3}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                className="w-full px-4 py-3 border-2 border-blue-200 rounded-xl bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                 placeholder="Deliverable description..."
               />
             </div>
@@ -246,24 +277,24 @@ const Deliverables = ({ user, isAdminView }) => {
                     priority: e.target.value,
                   })
                 }
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                className="w-full px-4 py-3 border-2 border-blue-200 rounded-xl bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
               >
                 <option value="low">Low</option>
                 <option value="medium">Medium</option>
                 <option value="high">High</option>
               </select>
             </div>
-            <div className="flex justify-end space-x-3">
+            <div className="flex justify-end space-x-3 pt-4">
               <button
                 type="button"
                 onClick={() => setShowAddForm(false)}
-                className="px-4 py-2 text-gray-600 hover:text-gray-800"
+                className="px-6 py-2 text-gray-600 hover:text-gray-800 bg-gray-100 hover:bg-gray-200 rounded-xl transition-all"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="flex items-center space-x-2 bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700"
+                className="flex items-center space-x-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-2 rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all shadow-lg"
               >
                 <Send className="w-4 h-4" />
                 <span>Add Deliverable</span>
@@ -276,9 +307,9 @@ const Deliverables = ({ user, isAdminView }) => {
       {/* Deliverables List */}
       <div className="space-y-4">
         {filteredDeliverables.length === 0 ? (
-          <div className="text-center py-12 bg-white rounded-lg border border-gray-200">
-            <CheckCircle className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
+          <div className="text-center py-12 bg-gradient-to-br from-gray-50 to-blue-50 rounded-2xl border-2 border-black">
+            <CheckCircle className="w-16 h-16 text-blue-400 mx-auto mb-4" />
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">
               No deliverables found
             </h3>
             <p className="text-gray-600">
@@ -291,11 +322,11 @@ const Deliverables = ({ user, isAdminView }) => {
           filteredDeliverables.map((deliverable) => (
             <div
               key={deliverable.id}
-              className={`bg-white p-6 rounded-lg shadow-sm border hover:shadow-md transition-all ${
+              className={`bg-white p-6 rounded-2xl shadow-lg border-2 border-black hover:shadow-xl transition-all card-hover ${
                 isOverdue(deliverable.deadline) &&
                 deliverable.status !== "completed"
-                  ? "border-red-300 bg-red-50"
-                  : "border-gray-200"
+                  ? "bg-gradient-to-br from-red-50 to-pink-50 border-red-400"
+                  : "bg-gradient-to-br from-white to-gray-50"
               }`}
             >
               <div className="flex items-start justify-between">

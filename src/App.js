@@ -10,6 +10,7 @@ import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "./services/firebase";
 import Login from "./components/Login";
 import Dashboard from "./components/Dashboard";
+import AIChatbot from "./components/AIChatbot";
 import "./App.css";
 
 function App() {
@@ -52,6 +53,9 @@ function App() {
             element={<Navigate to={user ? "/dashboard" : "/login"} />}
           />
         </Routes>
+        
+        {/* AI Chatbot - Available on all pages when user is logged in */}
+        {user && <AIChatbot />}
       </div>
     </Router>
   );
