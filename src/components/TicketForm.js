@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { auth, db } from "../services/firebase";
+import emailjs from "@emailjs/browser";
 
 const TicketForm = ({ onTicketSubmitted }) => {
   const [user] = useAuthState(auth);
@@ -52,6 +53,19 @@ const TicketForm = ({ onTicketSubmitted }) => {
       };
 
       await addDoc(collection(db, "tickets"), ticketData);
+
+      // Send auto-reply email
+      await emailjs.send(
+        process.env.REACT_APP_EMAILJS_SERVICE_ID,
+        process.env.REACT_APP_EMAILJS_TICKET_TEMPLATE_ID, // <-- create this template
+        {
+          to_email: user.email,
+          name: user.displayName || "Client",
+          title: formData.title,
+          description: formData.description,
+        },
+        process.env.REACT_APP_EMAILJS_PUBLIC_KEY
+      );
 
       // Reset form
       setFormData({
