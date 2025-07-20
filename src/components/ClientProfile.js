@@ -191,22 +191,23 @@ const ClientProfile = ({ user, isAdminView }) => {
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+    <div className="p-6 bg-gray-50">
       {error && (
-        <div className="bg-red-50 p-4 border-l-4 border-red-500 mb-4">
+        <div className="bg-red-50 p-4 border-l-4 border-red-500 mb-6 rounded-md shadow-sm">
           <div className="flex">
             <AlertCircle className="h-5 w-5 text-red-500 mr-2" />
             <p className="text-red-700">{error}</p>
           </div>
         </div>
       )}
-
-      <div className="md:flex">
-        {/* Left column - Profile summary */}
-        <div className="md:w-1/3 bg-gray-50 p-6 border-r border-gray-200">
-          <div className="flex flex-col items-center text-center">
+      
+      <div className="grid gap-6 lg:grid-cols-3 md:grid-cols-2 sm:grid-cols-1">
+        {/* Profile Card */}
+        <div className="bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden">
+          <div className="bg-gradient-to-r from-indigo-500 to-purple-600 h-24"></div>
+          <div className="flex flex-col items-center -mt-12 px-6 pb-6">
             <div className="relative group mb-4">
-              <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-white shadow-md">
+              <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-white shadow-md bg-white">
                 <img 
                   src={avatarPreview || profileData.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(profileData.displayName || user.email)}&background=6366f1&color=fff`} 
                   alt="Profile" 
@@ -227,9 +228,9 @@ const ClientProfile = ({ user, isAdminView }) => {
               )}
             </div>
             
-            <h2 className="text-2xl font-bold text-gray-800">{profileData.displayName}</h2>
+            <h2 className="text-xl font-bold text-gray-800">{profileData.displayName}</h2>
             <p className="text-indigo-600 font-medium">{profileData.position || "Client"}</p>
-            <p className="text-gray-500 mt-1">{profileData.company || "Company not specified"}</p>
+            <p className="text-gray-500 mt-1 text-sm">{profileData.company || "Company not specified"}</p>
             
             <div className="mt-6 w-full">
               <div className="flex justify-between mb-2">
@@ -242,11 +243,11 @@ const ClientProfile = ({ user, isAdminView }) => {
               </div>
               
               <div className="grid grid-cols-2 gap-4 text-center">
-                <div className="bg-white p-3 rounded-lg shadow-sm">
+                <div className="bg-gray-50 p-3 rounded-lg border border-gray-100">
                   <p className="text-xl font-bold text-indigo-600">{projectStats.activeProjects}</p>
                   <p className="text-xs text-gray-500">Active Projects</p>
                 </div>
-                <div className="bg-white p-3 rounded-lg shadow-sm">
+                <div className="bg-gray-50 p-3 rounded-lg border border-gray-100">
                   <p className="text-xl font-bold text-green-600">{projectStats.completedProjects}</p>
                   <p className="text-xs text-gray-500">Completed</p>
                 </div>
@@ -293,16 +294,16 @@ const ClientProfile = ({ user, isAdminView }) => {
           </div>
         </div>
         
-        {/* Right column - Profile details */}
-        <div className="md:w-2/3 p-6">
-          <div className="mb-8">
+        {/* Personal Information Card */}
+        <div className="bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden">
+          <div className="p-6">
             <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
               <User className="w-5 h-5 mr-2 text-indigo-500" />
               Personal Information
             </h3>
             
-            <div className="grid md:grid-cols-2 gap-4">
-              <div>
+            <div className="space-y-4">
+              <div className="bg-gray-50 p-4 rounded-lg border border-gray-100">
                 <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
                 {isEditing ? (
                   <input
@@ -313,16 +314,19 @@ const ClientProfile = ({ user, isAdminView }) => {
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   />
                 ) : (
-                  <p className="text-gray-800">{profileData.displayName || "Not provided"}</p>
+                  <p className="text-gray-800 font-medium">{profileData.displayName || "Not provided"}</p>
                 )}
               </div>
               
-              <div>
+              <div className="bg-gray-50 p-4 rounded-lg border border-gray-100">
                 <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
-                <p className="text-gray-800">{profileData.email}</p>
+                <div className="flex items-center">
+                  <Mail className="w-4 h-4 mr-2 text-gray-500" />
+                  <p className="text-gray-800">{profileData.email}</p>
+                </div>
               </div>
               
-              <div>
+              <div className="bg-gray-50 p-4 rounded-lg border border-gray-100">
                 <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
                 {isEditing ? (
                   <input
@@ -333,11 +337,14 @@ const ClientProfile = ({ user, isAdminView }) => {
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   />
                 ) : (
-                  <p className="text-gray-800">{profileData.phone || "Not provided"}</p>
+                  <div className="flex items-center">
+                    <Phone className="w-4 h-4 mr-2 text-gray-500" />
+                    <p className="text-gray-800">{profileData.phone || "Not provided"}</p>
+                  </div>
                 )}
               </div>
               
-              <div>
+              <div className="bg-gray-50 p-4 rounded-lg border border-gray-100">
                 <label className="block text-sm font-medium text-gray-700 mb-1">Position/Title</label>
                 {isEditing ? (
                   <input
@@ -353,15 +360,18 @@ const ClientProfile = ({ user, isAdminView }) => {
               </div>
             </div>
           </div>
-          
-          <div className="mb-8">
+        </div>
+        
+        {/* Company Information Card */}
+        <div className="bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden">
+          <div className="p-6">
             <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
               <Building className="w-5 h-5 mr-2 text-indigo-500" />
               Company Information
             </h3>
             
-            <div className="grid md:grid-cols-2 gap-4">
-              <div>
+            <div className="space-y-4">
+              <div className="bg-gray-50 p-4 rounded-lg border border-gray-100">
                 <label className="block text-sm font-medium text-gray-700 mb-1">Company Name</label>
                 {isEditing ? (
                   <input
@@ -372,11 +382,11 @@ const ClientProfile = ({ user, isAdminView }) => {
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   />
                 ) : (
-                  <p className="text-gray-800">{profileData.company || "Not provided"}</p>
+                  <p className="text-gray-800 font-medium">{profileData.company || "Not provided"}</p>
                 )}
               </div>
               
-              <div>
+              <div className="bg-gray-50 p-4 rounded-lg border border-gray-100">
                 <label className="block text-sm font-medium text-gray-700 mb-1">Industry</label>
                 {isEditing ? (
                   <select
@@ -402,7 +412,7 @@ const ClientProfile = ({ user, isAdminView }) => {
                 )}
               </div>
               
-              <div>
+              <div className="bg-gray-50 p-4 rounded-lg border border-gray-100">
                 <label className="block text-sm font-medium text-gray-700 mb-1">Website</label>
                 {isEditing ? (
                   <input
@@ -414,7 +424,7 @@ const ClientProfile = ({ user, isAdminView }) => {
                   />
                 ) : profileData.website ? (
                   <a href={profileData.website} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline flex items-center">
-                    <Globe className="w-4 h-4 mr-1" />
+                    <Globe className="w-4 h-4 mr-2" />
                     {profileData.website}
                   </a>
                 ) : (
@@ -422,7 +432,7 @@ const ClientProfile = ({ user, isAdminView }) => {
                 )}
               </div>
               
-              <div>
+              <div className="bg-gray-50 p-4 rounded-lg border border-gray-100">
                 <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
                 {isEditing ? (
                   <input
@@ -433,20 +443,26 @@ const ClientProfile = ({ user, isAdminView }) => {
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   />
                 ) : (
-                  <p className="text-gray-800">{profileData.address || "Not provided"}</p>
+                  <div className="flex items-center">
+                    <MapPin className="w-4 h-4 mr-2 text-gray-500" />
+                    <p className="text-gray-800">{profileData.address || "Not provided"}</p>
+                  </div>
                 )}
               </div>
             </div>
           </div>
-          
-          <div className="mb-8">
+        </div>
+        
+        {/* Additional Contact Card */}
+        <div className="bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden">
+          <div className="p-6">
             <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
               <Phone className="w-5 h-5 mr-2 text-indigo-500" />
               Additional Contact
             </h3>
             
-            <div className="grid md:grid-cols-2 gap-4">
-              <div>
+            <div className="space-y-4">
+              <div className="bg-gray-50 p-4 rounded-lg border border-gray-100">
                 <label className="block text-sm font-medium text-gray-700 mb-1">Contact Person</label>
                 {isEditing ? (
                   <input
@@ -457,11 +473,11 @@ const ClientProfile = ({ user, isAdminView }) => {
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   />
                 ) : (
-                  <p className="text-gray-800">{profileData.contactPerson || "Not provided"}</p>
+                  <p className="text-gray-800 font-medium">{profileData.contactPerson || "Not provided"}</p>
                 )}
               </div>
               
-              <div>
+              <div className="bg-gray-50 p-4 rounded-lg border border-gray-100">
                 <label className="block text-sm font-medium text-gray-700 mb-1">Contact Role</label>
                 {isEditing ? (
                   <input
@@ -476,7 +492,7 @@ const ClientProfile = ({ user, isAdminView }) => {
                 )}
               </div>
               
-              <div>
+              <div className="bg-gray-50 p-4 rounded-lg border border-gray-100">
                 <label className="block text-sm font-medium text-gray-700 mb-1">Contact Email</label>
                 {isEditing ? (
                   <input
@@ -487,11 +503,14 @@ const ClientProfile = ({ user, isAdminView }) => {
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   />
                 ) : (
-                  <p className="text-gray-800">{profileData.contactPersonEmail || "Not provided"}</p>
+                  <div className="flex items-center">
+                    <Mail className="w-4 h-4 mr-2 text-gray-500" />
+                    <p className="text-gray-800">{profileData.contactPersonEmail || "Not provided"}</p>
+                  </div>
                 )}
               </div>
               
-              <div>
+              <div className="bg-gray-50 p-4 rounded-lg border border-gray-100">
                 <label className="block text-sm font-medium text-gray-700 mb-1">Contact Phone</label>
                 {isEditing ? (
                   <input
@@ -502,79 +521,88 @@ const ClientProfile = ({ user, isAdminView }) => {
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   />
                 ) : (
-                  <p className="text-gray-800">{profileData.contactPersonPhone || "Not provided"}</p>
+                  <div className="flex items-center">
+                    <Phone className="w-4 h-4 mr-2 text-gray-500" />
+                    <p className="text-gray-800">{profileData.contactPersonPhone || "Not provided"}</p>
+                  </div>
                 )}
               </div>
             </div>
           </div>
-          
-          <div>
+        </div>
+        
+        {/* Notes & Bio Card */}
+        <div className="bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden">
+          <div className="p-6">
             <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
               <Calendar className="w-5 h-5 mr-2 text-indigo-500" />
               Notes & Bio
             </h3>
             
-            {isEditing ? (
-              <textarea
-                name="bio"
-                value={profileData.bio}
-                onChange={handleInputChange}
-                rows="4"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                placeholder="Tell us about your company or project requirements..."
-              ></textarea>
-            ) : (
-              <p className="text-gray-800 whitespace-pre-line">{profileData.bio || "No additional information provided."}</p>
-            )}
+            <div className="bg-gray-50 p-4 rounded-lg border border-gray-100">
+              {isEditing ? (
+                <textarea
+                  name="bio"
+                  value={profileData.bio}
+                  onChange={handleInputChange}
+                  rows="4"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  placeholder="Tell us about your company or project requirements..."
+                ></textarea>
+              ) : (
+                <p className="text-gray-800 whitespace-pre-line">{profileData.bio || "No additional information provided."}</p>
+              )}
+            </div>
           </div>
         </div>
       </div>
 
       {/* Activity Timeline - Only visible in non-editing mode */}
       {!isEditing && (
-        <div className="border-t border-gray-200 bg-gray-50 p-6">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-            <Clock className="w-5 h-5 mr-2 text-indigo-500" />
-            Recent Activity
-          </h3>
-          
-          <div className="relative pl-8 before:absolute before:left-4 before:top-0 before:h-full before:w-0.5 before:bg-gray-200">
-            <div className="relative mb-6">
-              <span className="absolute -left-8 flex h-6 w-6 items-center justify-center rounded-full bg-indigo-100 text-indigo-500 ring-2 ring-white">
-                <Check className="h-3 w-3" />
-              </span>
-              <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-100">
-                <div className="flex justify-between items-center mb-1">
-                  <h4 className="text-sm font-medium text-gray-900">Project milestone achieved</h4>
-                  <span className="text-xs text-gray-500">2 days ago</span>
+        <div className="mt-6 lg:col-span-3 md:col-span-2 sm:col-span-1">
+          <div className="bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden">
+            <div className="p-6">
+              <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                <Clock className="w-5 h-5 mr-2 text-indigo-500" />
+                Recent Activity
+              </h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="bg-gray-50 p-4 rounded-lg border border-gray-100 relative overflow-hidden">
+                  <div className="absolute top-0 left-0 w-1 h-full bg-indigo-500"></div>
+                  <span className="absolute top-4 right-4 flex h-6 w-6 items-center justify-center rounded-full bg-indigo-100 text-indigo-500 ring-1 ring-white">
+                    <Check className="h-3 w-3" />
+                  </span>
+                  <div className="pt-2 pr-8">
+                    <h4 className="text-sm font-medium text-gray-900">Project milestone achieved</h4>
+                    <span className="text-xs text-gray-500 block mt-1 mb-2">2 days ago</span>
+                    <p className="text-sm text-gray-600">Phase 1 deliverables completed and approved.</p>
+                  </div>
                 </div>
-                <p className="text-sm text-gray-600">Phase 1 deliverables completed and approved.</p>
-              </div>
-            </div>
-            
-            <div className="relative mb-6">
-              <span className="absolute -left-8 flex h-6 w-6 items-center justify-center rounded-full bg-green-100 text-green-500 ring-2 ring-white">
-                <Upload className="h-3 w-3" />
-              </span>
-              <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-100">
-                <div className="flex justify-between items-center mb-1">
-                  <h4 className="text-sm font-medium text-gray-900">Files uploaded</h4>
-                  <span className="text-xs text-gray-500">1 week ago</span>
+                
+                <div className="bg-gray-50 p-4 rounded-lg border border-gray-100 relative overflow-hidden">
+                  <div className="absolute top-0 left-0 w-1 h-full bg-green-500"></div>
+                  <span className="absolute top-4 right-4 flex h-6 w-6 items-center justify-center rounded-full bg-green-100 text-green-500 ring-1 ring-white">
+                    <Upload className="h-3 w-3" />
+                  </span>
+                  <div className="pt-2 pr-8">
+                    <h4 className="text-sm font-medium text-gray-900">Files uploaded</h4>
+                    <span className="text-xs text-gray-500 block mt-1 mb-2">1 week ago</span>
+                    <p className="text-sm text-gray-600">Uploaded 5 new documents for review.</p>
+                  </div>
                 </div>
-                <p className="text-sm text-gray-600">Uploaded 5 new documents for review.</p>
-              </div>
-            </div>
-            
-            <div className="relative">
-              <span className="absolute -left-8 flex h-6 w-6 items-center justify-center rounded-full bg-blue-100 text-blue-500 ring-2 ring-white">
-                <User className="h-3 w-3" />
-              </span>
-              <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-100">
-                <div className="flex justify-between items-center mb-1">
-                  <h4 className="text-sm font-medium text-gray-900">Profile created</h4>
-                  <span className="text-xs text-gray-500">{profileData.joinDate || "N/A"}</span>
+                
+                <div className="bg-gray-50 p-4 rounded-lg border border-gray-100 relative overflow-hidden">
+                  <div className="absolute top-0 left-0 w-1 h-full bg-blue-500"></div>
+                  <span className="absolute top-4 right-4 flex h-6 w-6 items-center justify-center rounded-full bg-blue-100 text-blue-500 ring-1 ring-white">
+                    <User className="h-3 w-3" />
+                  </span>
+                  <div className="pt-2 pr-8">
+                    <h4 className="text-sm font-medium text-gray-900">Profile created</h4>
+                    <span className="text-xs text-gray-500 block mt-1 mb-2">{profileData.joinDate || "N/A"}</span>
+                    <p className="text-sm text-gray-600">Welcome to ClientSync! Your journey with us begins.</p>
+                  </div>
                 </div>
-                <p className="text-sm text-gray-600">Welcome to ClientSync! Your journey with us begins.</p>
               </div>
             </div>
           </div>
